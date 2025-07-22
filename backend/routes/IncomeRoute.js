@@ -1,0 +1,10 @@
+import express from 'express';
+import { getIncome, addIncome , deleteIncome, updateIncome, downloadIncomeExcel} from '../controllers/incomeController.js';
+import { protect } from '../middleware/authMiddleware.js';
+const router = express.Router();
+router.get('/get', protect, getIncome);
+router.post('/add', protect, addIncome);
+router.put('/:id', protect, updateIncome);
+router.delete('/:id', protect, deleteIncome);
+router.get('/download-excel', protect, downloadIncomeExcel);
+export default router;
