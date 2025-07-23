@@ -1,14 +1,15 @@
 import Expense from "../models/Expense.js";
-export const addIncome = async(req, res)=>{
-    const userId = req.user.id;
+import xlsx from "xlsx";
+export const addExpense = async(req, res)=>{
     try{
-        const {amount, description, category, date} = req.body;
+        const {user, amount, description, category, date} = req.body;
         if(!amount || !description || !category || !date){
             res.status(400).json(`Please provide all details`);
         }
         const newExpense = await Expense.create({
-            amount, description, category, date : new Date(date)
+            user, amount, description, category, date : new Date(date)
         });
+        newExpense.save();
         res.status(200).json(`New Expense Created! : ${newExpense}`);
     }
     catch(error){
@@ -18,9 +19,10 @@ export const addIncome = async(req, res)=>{
 
 export const getExpense = async(req, res)=>{
     const userId = req.user.id;
+    console.log(userId);
     try{
-        const userExpense = await Expense.findById(userId);
-        res.status(200).json(`Expense fetched : ${userExpense}`);
+        const userExpenses = await Expense.find({user : userId }).sort({date:-1});
+        res.status(200).json(userExpenses);
     }
     catch(error){
         res.status(400).json(error.message);
@@ -28,10 +30,14 @@ export const getExpense = async(req, res)=>{
 }
 
 export const deleteExpense = async(req, res)=>{
-    const userId = req.params.id;
+    const {userId} = req.params;
     try{
-        await Expense.findByIdAndDelete(userId);
+        const deletedExpense = await Expense.findByIdAndDelete(userId);
+        if(!deletedExpense){
+            return res.status(404).json(`Couldn't delete expense with ${userId} || Expense not found`);
+        }
         res.status(200).json(`Expense deleted Successfully!`);
+
     }
     catch(error){
         res.status(500).json(error.message);
@@ -41,8 +47,8 @@ export const deleteExpense = async(req, res)=>{
 export const updateExpense = async(req, res)=>{
     const userId = req.params.id;
     try{
-        const {amount, description, category, date} = req.body;
-        await Expense.findByIdAndUpdate(userId, {amount, description, category, date:new Date(date)}, {new : true});
+        const {amount, description, category,} = req.body;
+        await Expense.findByIdAndUpdate(userId, {amount, description, category}, {new : true});
         res.status(200).json(`Expense Updated Successfully`);
     }
     catch(error){
@@ -53,7 +59,7 @@ export const updateExpense = async(req, res)=>{
 export const downloadAllExpenses = async(req, res)=>{
     const userId = req.user.id;
     try{
-        const expense = await Expense.find(userId).sort({date:-1});
+        const expense = await Expense.find({user:userId}).sort({date:-1});
         const data = expense.map((item) => ({
             amount: item.amount, 
             description : item.description,
